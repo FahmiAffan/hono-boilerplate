@@ -12,6 +12,8 @@ import { csrf } from 'hono/csrf'
 import { jwt } from 'hono/jwt'
 import type { JwtVariables } from 'hono/jwt'
 import { timeout } from 'hono/timeout';
+import { jsxRenderer } from 'hono/jsx-renderer'
+import UsersPage from './page/Users.js'
 
 type Variables = JwtVariables
 
@@ -21,24 +23,40 @@ const rawWhiteList = process.env.WHITELIST_URL ? process.env.WHITELIST_URL : 'ht
 
 app.use(csrf({ origin: rawWhiteList }))
 
-app.use('/api/*', cors({
-  origin: rawWhiteList,
-  allowHeaders: ['X-Custom-Header', 'Upgrade-Insecure-Requests'],
-  allowMethods: ['POST', 'GET', 'OPTIONS'],
-  exposeHeaders: ['Content-Length', 'X-Kuma-Revision'],
-  maxAge: 600,
-  credentials: true,
-}),
-  jwt({
-    secret: process.env.JWT_SECRET ? process.env.JWT_SECRET : 'root'
-  }),
-  timeout(5000)
-);
+app.use('*', jsxRenderer());
+
+// app.use('/api/*', cors({
+//   origin: rawWhiteList,
+//   allowHeaders: ['X-Custom-Header', 'Upgrade-Insecure-Requests'],
+//   allowMethods: ['POST', 'GET', 'OPTIONS'],
+//   exposeHeaders: ['Content-Length', 'X-Kuma-Revision'],
+//   maxAge: 600,
+//   credentials: true,
+// }),
+//   jwt({
+//     secret: process.env.JWT_SECRET ? process.env.JWT_SECRET : 'root'
+//   }),
+//   timeout(5000)
+// );
+
+app.use('*', async (c, next) => {
+  c.setRenderer((content) => {
+    return c.html(
+      <html>
+        <head></head>
+        <body>{content}</body>
+        <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+        <style href='./style.css'></style>
+      </html>
+    )
+  })
+  await next()
+})
 
 app.get('/api/users', async (c) => {
   const data = await db.select().from(usersTable);
-  console.log(data);
-  return c.json(data);
+  console.log(typeof data);
+  return c.render(UsersPage());
 })
 
 app.post('/users', async (c) => {

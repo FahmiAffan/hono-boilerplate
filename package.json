@@ -2,19 +2,21 @@
   "name": "hono-app",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch src/index.tsx",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "node dist/index.jsx",
     "migrate": "npx drizzle-kit push"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.6",
+    "@tailwindcss/cli": "^4.1.17",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.44.7",
     "drizzle-seed": "^0.3.1",
     "hono": "^4.10.4",
     "honox": "^0.1.52",
-    "pg": "^8.16.3"
+    "pg": "^8.16.3",
+    "tailwindcss": "^4.1.17"
   },
   "devDependencies": {
     "@types/node": "^20.11.17",
