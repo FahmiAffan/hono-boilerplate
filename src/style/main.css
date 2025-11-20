@@ -1,3 +1,22 @@
 @import "tailwindcss";
 
-:root {}
+:root {
+    h1 {
+        color: #2196F3;
+    }
+}
+
+.test {
+    color: red;
+    font-size: 1000px;
+}
+
+@theme {
+    --color-blue-primary: #2196F3;
+    --color-blue-lighten-500: #E3F2FD;
+    --color-blue-lighten-400: #BBDEFB;
+    --color-blue-lighten-300: #90CAF9;
+    --color-blue-darken-100: #1E88E5;
+    --color-blue-darken-200: #1976D2;
+    --color-blue-darken-300: #1565C0;
+}
