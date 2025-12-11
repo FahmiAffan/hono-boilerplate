@@ -12,7 +12,6 @@ import { csrf } from "hono/csrf";
 import { jwt } from "hono/jwt";
 import type { JwtVariables } from "hono/jwt";
 import { timeout } from "hono/timeout";
-import UsersPage from "./page/Users.js";
 
 type Variables = JwtVariables;
 
@@ -41,7 +40,7 @@ app.use('/api/*', cors({
 app.get("/api/users", async (c) => {
   const data = await db.select().from(usersTable);
   console.log(typeof data);
-  return c.render(UsersPage());
+  return c.json(data);
 });
 
 app.post("/users", async (c) => {

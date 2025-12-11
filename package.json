@@ -2,10 +2,10 @@
   "name": "hono-app",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.tsx",
+    "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.jsx",
-    "migrate": "npx drizzle-kit push"
+    "migrate": "npx drizzle-kit migrate --config=./src/config/drizzle.config.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.6",
@@ -16,6 +16,7 @@
     "hono": "^4.10.4",
     "honox": "^0.1.52",
     "pg": "^8.16.3",
+    "postgres": "^3.4.7",
     "tailwindcss": "^4.1.17"
   },
   "devDependencies": {

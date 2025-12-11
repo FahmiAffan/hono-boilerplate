@@ -6,7 +6,6 @@ import { usersTable } from "../../db/schema.js"
 
 export const getDatausers = () => {
     const data = db.select().from(usersTable);
-
     return data;
 }
 
