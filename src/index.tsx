@@ -1,32 +1,31 @@
 import "dotenv/config";
 
 import { serve } from "@hono/node-server";
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { usersTable } from "./db/schema.js";
-import { db } from "./connection.js";
-import { seed } from "drizzle-seed";
+import { initDb } from "./config/connection.js";
 import { eq } from "drizzle-orm";
-import { getUserById } from "./controller/user/UserController.js";
 import { cors } from "hono/cors";
 import { csrf } from "hono/csrf";
 import { jwt } from "hono/jwt";
 import type { JwtVariables } from "hono/jwt";
 import { timeout } from "hono/timeout";
-import { jsxRenderer } from "hono/jsx-renderer";
-import UsersPage from "./page/Users.js";
-import { serveStatic } from "@hono/node-server/serve-static";
+import { LoggerServices } from "./utils/logger.js";
+import { logger as HonoLog } from "hono/logger"
+import main from "./routes/index.js";
 
 type Variables = JwtVariables;
 
 export const app = new Hono<{ Variables: Variables }>();
+const logger = new LoggerServices();
 
 const rawWhiteList = process.env.WHITELIST_URL
   ? process.env.WHITELIST_URL
   : "http://localhost:8080/";
 
-app.use(csrf({ origin: rawWhiteList }));
-
-app.use("*", jsxRenderer());
+app.use('*', HonoLog());
+app.route("", main);
+// app.use(csrf({ origin: rawWhiteList }));
 
 // app.use('/api/*', cors({
 //   origin: rawWhiteList,
@@ -42,114 +41,14 @@ app.use("*", jsxRenderer());
 //   timeout(5000)
 // );
 
-app.use("./*", serveStatic({ root: "./" }));
-app.use("./style/*", serveStatic({ root: "./" }));
-
-app.use("*", async (c, next) => {
-  c.setRenderer((content) => {
-    return c.html(
-      <html>
-        <head>
-          <link rel="stylesheet" href="./style/main.css" />
-        </head>
-        <body>{content}</body>
-        <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-      </html>
-    );
-  });
-  await next();
-});
-
-app.get("/api/users", async (c) => {
-  const data = await db.select().from(usersTable);
-  console.log(typeof data);
-  return c.render(UsersPage());
-});
-
-app.post("/users", async (c) => {
-  const req = await c.req.json<typeof usersTable.$inferInsert>();
-  try {
-    const result = await db.insert(usersTable).values(req).returning();
-    return c.json(result);
-  } catch (e) {
-    console.log(e);
-    if (e instanceof Error && "cause" in e) {
-      // console.log(e.cause);
-      return c.json(e.message, 400);
-    } else {
-      return c.json("Internal Server Error", 500);
-    }
-  }
-});
-
-app.get("/users/:id", async (c) => {
-  const paramId = c.req.param("id");
-  console.log(paramId);
-  try {
-    const result = await db
-      .select()
-      .from(usersTable)
-      .where(eq(usersTable.id, paramId));
-    // console.log(result);
-    return c.json(result[0]);
-    // return c.json({params_id : paramId});
-  } catch (e) {
-    console.log(e);
-    if (e instanceof Error && "cause" in e) {
-      // console.log(e.cause);
-      return c.json(e.message, 400);
-    } else {
-      return c.json("Internal Server Error", 500);
-    }
-  }
-});
-
-app.put("/users/:id", async (c) => {
-  const paramId = c.req.param("id");
-  const req = await c.req.json<typeof usersTable.$inferInsert>();
-  try {
-    const result = await db
-      .select()
-      .from(usersTable)
-      .where(eq(usersTable.id, paramId));
-    return c.json(result);
-  } catch (e) {
-    console.log(e);
-    if (e instanceof Error && "cause" in e) {
-      // console.log(e.cause);
-      return c.json(e.message, 400);
-    } else {
-      return c.json("Internal Server Error", 500);
-    }
-  }
-});
-
-app.delete("/users/:id", async (c) => {
-  const paramId = c.req.param("id");
-  const selectedUser = await getUserById(paramId);
-  try {
-    const result = await db
-      .delete(usersTable)
-      .where(eq(usersTable.id, paramId));
-    if (result) {
-      const baseresponse = [
-        {
-          message: `Data with name ${selectedUser?.name} successfully deleted`,
-          status: 201,
-        },
-      ];
-      return c.json(baseresponse);
-    }
-  } catch (e) {
-    console.log(e);
-    if (e instanceof Error && "cause" in e) {
-      // console.log(e.cause);
-      return c.json(e.message, 400);
-    } else {
-      return c.json("Internal Server Error", 500);
-    }
-  }
-});
+// initDb()
+//   .then(() => {
+//     console.log('🚀 Server is ready');
+//   })
+//   .catch((error) => {
+//     console.error('💥 Server failed to start:', error);
+//     process.exit(1); // matikan server kalau DB gagal konek
+//   });
 
 serve(
   {
@@ -157,7 +56,16 @@ serve(
     port: 3000,
   },
   async (info) => {
-    // await seed(db, { usersTable });
-    console.log(`Server is running on http://localhost:${info.port}`);
+    try {
+      console.log("   ___                        _               \r\n  \/ __\\__  _ __ __ _  ___    \/_\\  _ __  _ __  \r\n \/ _\\\/ _ \\| \'__\/ _` |\/ _ \\  \/\/_\\\\| \'_ \\| \'_ \\ \r\n\/ \/ | (_) | | | (_| |  __\/ \/  _  \\ |_) | |_) |\r\n\\\/   \\___\/|_|  \\__, |\\___| \\_\/ \\_\/ .__\/| .__\/ \r\n               |___\/             |_|   |_|    ");
+      
+      await initDb();
+      
+      logger.succes("🚀 Server is ready");
+      logger.succes(`Listening To http://localhost:${info.port}`);
+    } catch (err) {
+      logger.error(`💥 Server failed to start: ${err}`);
+      process.exit();
+    }
   }
 );

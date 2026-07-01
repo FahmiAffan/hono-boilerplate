@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.19.6",
+    "@hono/zod-validator": "^0.8.0",
     "@tailwindcss/cli": "^4.1.17",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.44.7",
@@ -16,7 +17,8 @@
     "hono": "^4.10.4",
     "honox": "^0.1.52",
     "pg": "^8.16.3",
-    "tailwindcss": "^4.1.17"
+    "tailwindcss": "^4.1.17",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^20.11.17",
