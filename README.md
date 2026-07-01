@@ -1,6 +1,3 @@
-Berikut adalah draf file `README.md` yang bisa Anda langsung gunakan untuk dokumentasi repository Anda. Saya menambahkan contoh studi kasus (Fitur Product dengan logika bisnis stok) agar panduannya lebih konkret.
-
-```markdown
 # Nama Proyek Anda
 
 Aplikasi backend yang dibangun menggunakan **Hono**, dirancang dengan arsitektur modular dan berlapis (Layered Architecture) untuk menjamin skalabilitas, kemudahan maintenance, dan kode yang rapi. Dioptimalkan untuk berjalan di lingkungan Edge maupun Node.js biasa.
