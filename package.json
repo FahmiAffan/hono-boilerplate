@@ -2,9 +2,9 @@
   "name": "hono-app",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.tsx",
+    "dev": "tsx watch src/app.ts",
     "build": "tsc",
-    "start": "node dist/index.jsx",
+    "start": "node dist/app.js",
     "migrate": "npx drizzle-kit push"
   },
   "dependencies": {

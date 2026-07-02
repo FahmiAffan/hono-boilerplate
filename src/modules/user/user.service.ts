@@ -1,100 +1,95 @@
 import { BaseResponse } from "../../utils/base-response.js";
-import { getDb } from "../../config/connection.js";
 import { usersTable } from "../../db/schema.js";
-import { eq } from "drizzle-orm";
 import { Hono, type Context } from "hono";
 import { countUserUseCase } from "./use-case/count-user.usecase.js";
-
+import { UserRepository } from './repository/user.respository.js'
+import { validator } from 'hono/validator'
 export const app = new Hono();
+const userRepository = new UserRepository();
 
 app.get('/users', async (c) => {
     try {
-        const db = getDb();
-        const res = await db.select().from(usersTable);
+        const res = await userRepository.findAll();
         const countUser = countUserUseCase(res);
         return new BaseResponse(c).success("Successfully get users", { users: res, length: countUser }, 200);
     } catch (err) {
-        return c.json({ error: err, message: "error" })
+        if (err instanceof Error && "cause" in err) {
+            return new BaseResponse(c).error(err.message, null, 500);
+        }
     }
 })
 
 app.post("/users", async (c: Context) => {
     const req = await c.req.json<typeof usersTable.$inferInsert>();
-    const db = getDb();
     try {
-        const result = await db.insert(usersTable).values(req).returning();
-        return new BaseResponse(c).success("Successfully get users", result, 200);
+        const result = await userRepository.insertUser(req);
+        return new BaseResponse(c).success("Successfully created user", result, 201);
     } catch (e) {
         console.log(e);
         if (e instanceof Error && "cause" in e) {
-            return c.json(e.message, 500)
+            return new BaseResponse(c).error(e.message, null, 500);
         } else {
-            return c.json("Internal Server Error", 500);
+            return new BaseResponse(c).error("Internal Server Error", null, 500);
         }
     }
 });
 
 app.get("/users/:id", async (c) => {
     const paramId = c.req.param("id");
-    const db = getDb();
     try {
-        const result = await db
-            .select()
-            .from(usersTable)
-            .where(eq(usersTable.id, paramId));
-        return c.json(result[0]);
+        const result = await userRepository.findById(paramId);
+        if (!result) {
+            return new BaseResponse(c).error("User not found", null, 404);
+        }
+        return new BaseResponse(c).success("User found", result, 200);
     } catch (e) {
         console.log(e);
         if (e instanceof Error && "cause" in e) {
-            return c.json(e.message, 400);
+            return new BaseResponse(c).error(e.message, null, 400);
         } else {
-            return c.json("Internal Server Error", 500);
+            return new BaseResponse(c).error("Internal Server Error", null, 500);
         }
     }
 });
 
-app.put("/users/:id", async (c) => {
+app.put("/users/:id", validator('json', (value: any, c: Context) => {
+    if (!value || typeof value !== 'object') {
+        return new BaseResponse(c).error("Invalid request body", null, 400);
+    }
+    return true;
+}), async (c) => {
     const paramId = c.req.param("id");
     const req = await c.req.json<typeof usersTable.$inferInsert>();
-    const db = getDb();
     try {
-        const result = await db
-            .select()
-            .from(usersTable)
-            .where(eq(usersTable.id, paramId));
-        return c.json(result);
+        const result = await userRepository.updateUser(paramId, req);
+        if (!result) {
+            return new BaseResponse(c).error("User not found", null, 404);
+        }
+        return new BaseResponse(c).success("User updated successfully", result, 200);
     } catch (e) {
         console.log(e);
         if (e instanceof Error && "cause" in e) {
-            return c.json(e.message, 400);
+            return new BaseResponse(c).error(e.message, null, 400);
         } else {
-            return c.json("Internal Server Error", 500);
+            return new BaseResponse(c).error("Internal Server Error", null, 500);
         }
     }
 });
 
 app.delete("/users/:id", async (c) => {
     const paramId = c.req.param("id");
-    const db = getDb();
     try {
-        const result = await db
-            .delete(usersTable)
-            .where(eq(usersTable.id, paramId));
+        const result = await userRepository.delete(paramId);
         if (result) {
-            const baseresponse = [
-                {
-                    message: `Data with name successfully deleted`,
-                    status: 201,
-                },
-            ];
-            return c.json(baseresponse);
+            return new BaseResponse(c).success(`Successfully deleted user with name ${result.name}`, null , 200);
         }
+        return c.json({ error: "User not found" }, 404);
     } catch (e) {
         console.log(e);
         if (e instanceof Error && "cause" in e) {
-            return c.json(e.message, 400);
+            return new BaseResponse(c).error(e.message);
         } else {
-            return c.json("Internal Server Error", 500);
+            return new BaseResponse(c).error("Internal Server Error");
         }
     }
 });
